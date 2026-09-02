@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+
+# Node
+node_modules/
+dist/
+
+# Docker
+docker-compose.override.yml
+
+# VS Code
+.vscode/
