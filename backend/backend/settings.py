@@ -55,17 +55,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-# Database (Postgres)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', os.environ.get('POSTGRES_DB', 'trello')),
-        'USER': os.environ.get('DATABASE_USER', os.environ.get('POSTGRES_USER', 'trello')),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', os.environ.get('POSTGRES_PASSWORD', 'trello')),
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-        'PORT': os.environ.get('DATABASE_PORT', 5432),
+# Database configuration
+# Use SQLite by default for faster local development and lower friction.
+# To use Postgres set USE_SQLITE=0 and provide DATABASE_HOST / POSTGRES_* env vars (or run the postgres service in docker-compose).
+USE_SQLITE = os.environ.get('USE_SQLITE', '1') == '1'
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DATABASE_NAME', os.environ.get('POSTGRES_DB', 'trello')),
+            'USER': os.environ.get('DATABASE_USER', os.environ.get('POSTGRES_USER', 'trello')),
+            'PASSWORD': os.environ.get('DATABASE_PASSWORD', os.environ.get('POSTGRES_PASSWORD', 'trello')),
+            'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
+            'PORT': os.environ.get('DATABASE_PORT', 5432),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []
 

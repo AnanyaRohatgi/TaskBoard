@@ -14,3 +14,6 @@ docker-compose.override.yml
 
 # VS Code
 .vscode/
+
+# Local SQLite database
+backend/db.sqlite3

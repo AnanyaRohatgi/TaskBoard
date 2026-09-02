@@ -9,10 +9,28 @@ Stack
 
 Quickstart (local)
 1. Copy .env.example to .env and set values.
-2. Build and run with Docker Compose:
+2. For fastest local development the project defaults to SQLite. Start Django and frontend separately (no need for Postgres):
+   cd backend
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   cp ../.env.example .env
+   # ensure USE_SQLITE=1 in .env (default)
+   python manage.py migrate
+   python manage.py seed
+   # Start backend dev server
+   python manage.py runserver
+
+   # In a separate shell, start frontend
+   cd ../frontend
+   npm ci
+   npm run dev -- --host
+
+   Backend API: http://localhost:8000/api/
+   Frontend: http://localhost:3000/
+
+3. If you prefer to run with Docker Compose and Postgres, set USE_SQLITE=0 and run:
    docker compose up --build
-3. Backend API: http://localhost:8000/api/
-4. Frontend: http://localhost:3000/
 
 Notes
 - This repo is a starter scaffold. Implement models, serializers, frontend views and CI as needed.
