@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from django.db import transaction
+from django.db import models
 from .models import Board, List, Card
 from .serializers import BoardSerializer, ListSerializer, CardSerializer
 
