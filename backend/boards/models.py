@@ -17,6 +17,9 @@ class List(models.Model):
     title = models.CharField(max_length=255)
     position = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['position']
+
     def __str__(self):
         return f"{self.board.title} - {self.title}"
 
@@ -35,6 +38,9 @@ class Card(models.Model):
     assignees = models.ManyToManyField(User, blank=True)
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position']
 
     def __str__(self):
         return self.title

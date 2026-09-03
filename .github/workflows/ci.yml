@@ -44,3 +44,12 @@ jobs:
         run: |
           python -m py_compile backend/*.py boards/*.py accounts/*.py
 
+      - name: Run backend tests
+        working-directory: ./backend
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key
+          DJANGO_DEBUG: "1"
+          USE_SQLITE: "1"
+        run: |
+          python manage.py test --verbosity 2
+

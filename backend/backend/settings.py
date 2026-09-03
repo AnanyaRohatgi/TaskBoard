@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -8,7 +9,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret')
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = ['*']
+DEFAULT_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]']
+raw_hosts = os.environ.get('ALLOWED_HOSTS', '*')
+if raw_hosts == '*':
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [host.strip() for host in raw_hosts.split(',') if host.strip()] + DEFAULT_ALLOWED_HOSTS
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -57,9 +63,23 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database configuration
 # Use SQLite by default for faster local development and lower friction.
-# To use Postgres set USE_SQLITE=0 and provide DATABASE_HOST / POSTGRES_* env vars (or run the postgres service in docker-compose).
-USE_SQLITE = os.environ.get('USE_SQLITE', '1') == '1'
-if USE_SQLITE:
+# PostgreSQL is the production and Docker default, with a SQLite fallback for local non-Docker usage.
+DATABASE_URL = os.environ.get('DATABASE_URL')
+USE_SQLITE = os.environ.get('USE_SQLITE', '1') == '1' and not DATABASE_URL
+
+if DATABASE_URL:
+    parsed = urlparse(DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': parsed.username,
+            'PASSWORD': parsed.password,
+            'HOST': parsed.hostname,
+            'PORT': parsed.port or 5432,
+        }
+    }
+elif USE_SQLITE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -86,6 +106,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # DRF
@@ -94,12 +115,23 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
 }
 
-# CORS for frontend development
-CORS_ALLOWED_ORIGINS = [
-    os.environ.get('VITE_API_BASE_URL', 'http://localhost:3000')
+# CORS configuration for local development and production deployments.
+# FRONTEND_ORIGIN may be a single URL or a comma-separated list.
+frontend_origins = [
+    value.strip()
+    for value in os.environ.get('CORS_ALLOWED_ORIGINS', os.environ.get('FRONTEND_ORIGIN', 'http://localhost:3000')).split(',')
+    if value.strip()
 ]
+if not frontend_origins:
+    frontend_origins = ['http://localhost:3000']
+
+CORS_ALLOWED_ORIGINS = frontend_origins
+CSRF_TRUSTED_ORIGINS = [origin for origin in frontend_origins if origin.startswith('https://')]
+if os.environ.get('RENDER_EXTERNAL_URL'):
+    CSRF_TRUSTED_ORIGINS.append(os.environ['RENDER_EXTERNAL_URL'])
