@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: taskboard-api
+    name: TaskBoard
     env: python
     plan: free
     rootDir: backend
@@ -25,7 +25,7 @@ services:
           property: connectionString
 
   - type: web
-    name: taskboard-frontend
+    name: TaskBoard-1
     env: static
     plan: free
     rootDir: frontend
