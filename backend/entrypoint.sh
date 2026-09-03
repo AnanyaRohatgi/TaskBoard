@@ -10,6 +10,10 @@ fi
 
 python manage.py migrate --noinput
 
+if [ "${SEED_DEMO_DATA:-0}" = "1" ]; then
+  python manage.py seed
+fi
+
 if [ "${DJANGO_DEBUG:-1}" = "1" ]; then
   python manage.py runserver 0.0.0.0:8000
 else
