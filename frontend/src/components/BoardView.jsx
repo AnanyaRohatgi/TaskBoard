@@ -123,11 +123,9 @@ export default function BoardView({ boardId }) {
     const index = board.lists.findIndex((list) => list.id === listId)
     const targetIndex = index + direction
     if (targetIndex < 0 || targetIndex >= board.lists.length) return
-    const current = board.lists[index]
-    const swap = board.lists[targetIndex]
+
     try {
-      await api.patch(`/lists/${current.id}/`, { position: targetIndex })
-      await api.patch(`/lists/${swap.id}/`, { position: index })
+      await api.patch(`/lists/${listId}/`, { position: targetIndex })
       await loadBoard()
     } catch (err) {
       console.error('Failed to reorder list', err)

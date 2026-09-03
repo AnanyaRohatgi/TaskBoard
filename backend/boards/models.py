@@ -17,6 +17,9 @@ class List(models.Model):
     title = models.CharField(max_length=255)
     position = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['position']
+
     def __str__(self):
         return f"{self.board.title} - {self.title}"
 

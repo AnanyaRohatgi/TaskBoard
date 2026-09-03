@@ -59,3 +59,27 @@ class CardOrderTests(TestCase):
         self.assertEqual(self.card_c.position, 0)
         self.assertEqual(self.card_a.position, 1)
         self.assertEqual(self.card_b.position, 2)
+
+
+class ListOrderTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='tester', password='secret123')
+        self.board = Board.objects.create(title='Board')
+        self.list_a = List.objects.create(board=self.board, title='To Do', position=0)
+        self.list_b = List.objects.create(board=self.board, title='In Progress', position=1)
+        self.list_c = List.objects.create(board=self.board, title='Done', position=2)
+
+    def test_list_order_is_returned_by_position(self):
+        client = APIClient()
+        token = Token.objects.create(user=self.user)
+        client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+        response = client.patch(f'/api/lists/{self.list_a.id}/', {'position': 1}, format='json')
+        self.assertEqual(response.status_code, 200)
+
+        response = client.patch(f'/api/lists/{self.list_b.id}/', {'position': 0}, format='json')
+        self.assertEqual(response.status_code, 200)
+
+        board_response = client.get(f'/api/boards/{self.board.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([lst['title'] for lst in board_response.data['lists']], ['In Progress', 'To Do', 'Done'])

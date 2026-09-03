@@ -53,9 +53,13 @@ class ListSerializer(serializers.ModelSerializer):
 
 
 class BoardSerializer(serializers.ModelSerializer):
-    lists = ListSerializer(many=True, read_only=True)
+    lists = serializers.SerializerMethodField()
     labels = LabelSerializer(many=True, read_only=True)
 
     class Meta:
         model = Board
         fields = ['id', 'title', 'description', 'archived', 'created_at', 'lists', 'labels']
+
+    def get_lists(self, obj):
+        lists = obj.lists.all().order_by('position')
+        return ListSerializer(lists, many=True).data

@@ -17,6 +17,47 @@ class ListViewSet(viewsets.ModelViewSet):
     serializer_class = ListSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def update(self, request, *args, **kwargs):
+        """
+        Reindex sibling lists when a list is moved to a new position.
+        """
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        new_position = request.data.get('position', None)
+
+        if new_position is None:
+            return super().update(request, *args, **kwargs)
+
+        try:
+            with transaction.atomic():
+                old_position = instance.position
+                board = instance.board
+                new_position = int(new_position)
+
+                if new_position < 0:
+                    return Response({'detail': 'List position must be non-negative.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                if new_position == old_position:
+                    serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_update(serializer)
+                    return Response(serializer.data)
+
+                if new_position < old_position:
+                    List.objects.filter(board=board, position__gte=new_position, position__lt=old_position).update(position=models.F('position') + 1)
+                elif new_position > old_position:
+                    List.objects.filter(board=board, position__lte=new_position, position__gt=old_position).update(position=models.F('position') - 1)
+
+                instance.position = new_position
+                instance.save()
+
+                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer.is_valid(raise_exception=True)
+                self.perform_update(serializer)
+                return Response(serializer.data)
+        except Exception as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LabelViewSet(viewsets.ModelViewSet):
     queryset = Label.objects.all().order_by('name')
