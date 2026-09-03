@@ -11,6 +11,7 @@ export default function App(){
   const [credentials, setCredentials] = useState({ username: '', password: '' })
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'))
   const [confirmDeleteBoardId, setConfirmDeleteBoardId] = useState(null)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const loadBoards = async () => {
     try {
@@ -64,6 +65,7 @@ export default function App(){
       const r = await api.post('/boards/', boardForm)
       setSelected(r.data.id)
       setBoardForm({ title: '', description: '' })
+      setCreateOpen(false)
       await loadBoards()
     } catch (err) {
       console.error('Failed to create board', err)
@@ -92,109 +94,130 @@ export default function App(){
     }
   }
 
-  if (loading) return <div>Loading...</div>
+  if (loading) return <div className="app-loading">Loading workspace…</div>
 
   if (!isLoggedIn) {
     return (
-      <div style={{ padding: 24 }}>
-        <h2>Login</h2>
-        <form onSubmit={handleLogin} style={{ maxWidth: 420 }}>
-          <div style={{ marginBottom: 12 }}>
-            <label>Username</label><br />
+      <div className="login-page">
+        <form className="login-card" onSubmit={handleLogin}>
+          <h1>Task Board</h1>
+          <p className="muted">Sign in to open your boards.</p>
+          <div className="field">
+            <label htmlFor="username">Username</label>
             <input
+              id="username"
+              autoComplete="username"
               value={credentials.username}
               onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-              style={{ width: '100%', padding: 8 }}
             />
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Password</label><br />
+          <div className="field">
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
+              autoComplete="current-password"
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-              style={{ width: '100%', padding: 8 }}
             />
           </div>
-          {authError && <div style={{ color: 'crimson', marginBottom: 12 }}>{authError}</div>}
-          <button type="submit">Login</button>
+          {authError && <div className="auth-error">{authError}</div>}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Login</button>
         </form>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <style>{`
-        .task-board-shell { display: flex; gap: 20px; align-items: flex-start; }
-        .task-board-sidebar { width: 260px; flex-shrink: 0; }
-        .task-board-main { flex: 1; min-width: 0; }
-        @media (max-width: 900px) {
-          .task-board-shell { flex-direction: column; }
-          .task-board-sidebar { width: 100%; }
-        }
-        @media (max-width: 600px) {
-          .task-board-sidebar .board-row { flex-wrap: wrap; }
-          .task-board-sidebar .board-row button { flex: 1 1 auto; }
-        }
-      `}</style>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="sidebar-top">
+          <h1 className="brand">Task Board</h1>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
+        </div>
 
-      <h1>Task Board</h1>
-      <div className="task-board-shell">
-        <aside className="task-board-sidebar">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: '0 0 8px' }}>Boards</h3>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm board-create-toggle"
+          aria-expanded={createOpen}
+          onClick={() => setCreateOpen((open) => !open)}
+        >
+          {createOpen ? 'Hide form' : 'New board'}
+        </button>
+        <form onSubmit={handleCreateBoard} className={`board-create${createOpen ? ' is-open' : ''}`}>
+          <input
+            placeholder="Board title"
+            value={boardForm.title}
+            onChange={(e) => setBoardForm({ ...boardForm, title: e.target.value })}
+          />
+          <textarea
+            placeholder="Description"
+            value={boardForm.description}
+            onChange={(e) => setBoardForm({ ...boardForm, description: e.target.value })}
+          />
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create board</button>
+        </form>
 
-          <form onSubmit={handleCreateBoard} style={{ marginBottom: 16 }}>
-            <input
-              placeholder="Board title"
-              value={boardForm.title}
-              onChange={(e) => setBoardForm({ ...boardForm, title: e.target.value })}
-              style={{ width: '100%', padding: 8, marginBottom: 8 }}
-            />
-            <textarea
-              placeholder="Description"
-              value={boardForm.description}
-              onChange={(e) => setBoardForm({ ...boardForm, description: e.target.value })}
-              style={{ width: '100%', padding: 8, resize: 'vertical', minHeight: 60, marginBottom: 8 }}
-            />
-            <button type="submit" style={{ width: '100%' }}>Create board</button>
-          </form>
-
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {boards.length === 0 ? (
+          <p className="empty-note">No boards yet. Create one to get started.</p>
+        ) : (
+          <ul className="board-list-nav">
             {boards.map((board) => (
-              <li key={board.id} style={{ marginBottom: 8 }}>
-                <div className="board-row" style={{ display: 'flex', gap: 6 }}>
+              <li key={board.id}>
+                <div className="board-row">
                   <button
+                    type="button"
                     onClick={() => setSelected(board.id)}
-                    style={{ flex: 1, textAlign: 'left', background: selected === board.id ? '#dfeeff' : '#f5f5f5', border: '1px solid #ddd', padding: 8 }}
+                    className={`board-select${selected === board.id ? ' is-active' : ''}${board.archived ? ' is-archived' : ''}`}
                   >
-                    {board.title}
+                    <span className="board-title-row">
+                      <span className="board-title-text">{board.title}</span>
+                      {board.archived ? <span className="badge">Archived</span> : null}
+                    </span>
                   </button>
-                  <button onClick={() => handleArchiveBoard(board.id)} title="Archive board">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleArchiveBoard(board.id)}
+                    title="Archive board"
+                  >
                     {board.archived ? 'Unarchive' : 'Archive'}
                   </button>
-                  <button onClick={() => setConfirmDeleteBoardId(board.id)} title="Delete board">×</button>
+                  <button
+                    type="button"
+                    className="btn btn-icon"
+                    onClick={() => setConfirmDeleteBoardId(board.id)}
+                    title="Delete board"
+                    aria-label="Delete board"
+                  >
+                    ×
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
-        </aside>
+        )}
+      </aside>
 
-        <main className="task-board-main">
-          {selected ? <BoardView boardId={selected} /> : <div>Select a board to view</div>}
-        </main>
-      </div>
+      <main className="workspace">
+        {selected ? (
+          <BoardView boardId={selected} />
+        ) : (
+          <div className="workspace-empty">
+            <h2>Select a board</h2>
+            <p>Choose a board from the sidebar, or create a new one.</p>
+          </div>
+        )}
+      </main>
 
       {confirmDeleteBoardId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
-          <div style={{ background: '#fff', padding: 20, borderRadius: 8, minWidth: 260 }}>
-            <p>Delete this board?</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setConfirmDeleteBoardId(null)}>Cancel</button>
-              <button onClick={() => handleDeleteBoard(confirmDeleteBoardId)}>Delete</button>
+        <div className="overlay">
+          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-board-title">
+            <h3 id="delete-board-title">Delete this board?</h3>
+            <p className="dialog-copy">This action cannot be undone.</p>
+            <div className="dialog-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirmDeleteBoardId(null)}>Cancel</button>
+              <button type="button" className="btn btn-danger" onClick={() => handleDeleteBoard(confirmDeleteBoardId)}>Delete</button>
             </div>
           </div>
         </div>

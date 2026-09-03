@@ -360,99 +360,135 @@ export default function BoardView({ boardId }) {
     setModalInput('')
   }
 
-  if (loading) return <div>Loading board...</div>
-  if (!board) return <div>No board selected</div>
+  if (loading) return <div className="board-loading">Loading board…</div>
+  if (!board) return <div className="empty-note">No board selected</div>
 
   const activeBoard = filteredBoard || board
+  const hasActiveFilters = Boolean(
+    filters.search || filters.label !== 'all' || filters.dueDate || filters.assignee !== 'all'
+  )
 
   return (
     <div>
-      <style>{`
-        .board-shell { display: flex; flex-direction: column; gap: 16px; }
-        .board-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-        .board-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .board-filters input, .board-filters select { padding: 8px; min-width: 150px; }
-        .board-columns { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; }
-        .board-list { min-width: 280px; background: #f4f4f4; border-radius: 8px; padding: 12px; }
-        .board-list-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .board-list-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
-        @media (max-width: 900px) {
-          .board-toolbar { align-items: flex-start; }
-          .board-filters { width: 100%; }
-          .board-filters input, .board-filters select { flex: 1 1 160px; }
-        }
-        @media (max-width: 600px) {
-          .board-list { min-width: 240px; }
-          .board-list-header { flex-direction: column; align-items: flex-start; }
-          .board-list-actions { width: 100%; }
-          .board-list-actions button { flex: 1 1 auto; }
-        }
-      `}</style>
-
       <div className="board-shell">
-        <div className="board-toolbar">
-          <h2 style={{ margin: 0 }}>{board.title}</h2>
+        <header className="board-header">
           <div>
-            <button onClick={() => openModal({ type: 'prompt', title: 'Board title', defaultValue: board.title, action: 'renameBoard', payload: { boardId: board.id } })}>Rename Board</button>
-            <button onClick={() => openModal({ type: 'prompt', title: 'Board description', defaultValue: board.description || '', action: 'editDescription', payload: { boardId: board.id } })} style={{ marginLeft: 8 }}>Edit Description</button>
+            <h2>{board.title}</h2>
+            {board.description ? <p className="board-description">{board.description}</p> : <p className="board-description">No description yet.</p>}
+          </div>
+          <div className="board-header-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => openModal({ type: 'prompt', title: 'Board title', defaultValue: board.title, action: 'renameBoard', payload: { boardId: board.id } })}
+            >
+              Rename Board
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => openModal({ type: 'prompt', title: 'Board description', defaultValue: board.description || '', action: 'editDescription', payload: { boardId: board.id } })}
+            >
+              Edit Description
+            </button>
+          </div>
+        </header>
+
+        <div className="board-toolbar" role="search">
+          <div className="filter-field filter-search">
+            <label htmlFor="card-search">Search</label>
+            <input
+              id="card-search"
+              value={filters.search}
+              onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
+              placeholder="Search cards by title"
+            />
+          </div>
+          <div className="filter-controls">
+            <div className="filter-field">
+              <label htmlFor="filter-label">Label</label>
+              <select id="filter-label" value={filters.label} onChange={(e) => setFilters((current) => ({ ...current, label: e.target.value }))}>
+                <option value="all">All labels</option>
+                {(board.labels || []).map((label) => (
+                  <option key={label.id} value={label.id}>{label.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-field">
+              <label htmlFor="filter-due">Due date</label>
+              <input
+                id="filter-due"
+                type="date"
+                value={filters.dueDate}
+                onChange={(e) => setFilters((current) => ({ ...current, dueDate: e.target.value }))}
+              />
+            </div>
+            <div className="filter-field">
+              <label htmlFor="filter-assignee">Assignee</label>
+              <select id="filter-assignee" value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))}>
+                <option value="all">All assignees</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>{user.username}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              className={`btn ${hasActiveFilters ? 'btn-secondary' : 'btn-ghost'}`}
+              onClick={() => setFilters({ search: '', label: 'all', dueDate: '', assignee: 'all' })}
+            >
+              Clear filters
+            </button>
           </div>
         </div>
 
-        <div className="board-filters">
-          <input
-            value={filters.search}
-            onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
-            placeholder="Search cards"
-          />
-          <select value={filters.label} onChange={(e) => setFilters((current) => ({ ...current, label: e.target.value }))}>
-            <option value="all">All labels</option>
-            {(board.labels || []).map((label) => (
-              <option key={label.id} value={label.id}>{label.name}</option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={filters.dueDate}
-            onChange={(e) => setFilters((current) => ({ ...current, dueDate: e.target.value }))}
-          />
-          <select value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))}>
-            <option value="all">All assignees</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>{user.username}</option>
-            ))}
-          </select>
-          <button onClick={() => setFilters({ search: '', label: 'all', dueDate: '', assignee: 'all' })}>Clear filters</button>
-        </div>
-
-        <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+        <div className="list-composer">
           <input
             value={newListTitle}
             onChange={(e) => setNewListTitle(e.target.value)}
             placeholder="New list title"
-            style={{ flex: 1, padding: 8 }}
           />
-          <button onClick={createList}>Add list</button>
+          <button type="button" className="btn btn-primary" onClick={createList}>Add list</button>
         </div>
 
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="board-columns">
+            {activeBoard.lists.length === 0 ? (
+              <div className="empty-note">No lists yet. Add a list to start organizing cards.</div>
+            ) : null}
             {activeBoard.lists.map((list) => (
               <div key={list.id} className="board-list">
                 <div className="board-list-header">
-                  <strong>{list.title}</strong>
+                  <div className="board-list-title">
+                    <strong>{list.title}</strong>
+                    <span className="count-pill">{list.cards.length}</span>
+                  </div>
                   <div className="board-list-actions">
-                    <button onClick={() => moveList(list.id, -1)} disabled={activeBoard.lists.indexOf(list) === 0}>←</button>
-                    <button onClick={() => moveList(list.id, 1)} disabled={activeBoard.lists.indexOf(list) === activeBoard.lists.length - 1}>→</button>
-                    <button onClick={() => openModal({ type: 'prompt', title: 'List name', defaultValue: list.title, action: 'renameList', payload: { listId: list.id } })}>Rename</button>
-                    <button onClick={() => openModal({ type: 'confirm', title: 'Delete this list?', action: 'deleteList', payload: { listId: list.id } })}>Delete</button>
+                    <button type="button" className="btn btn-icon btn-sm" onClick={() => moveList(list.id, -1)} disabled={activeBoard.lists.indexOf(list) === 0} aria-label="Move list left">←</button>
+                    <button type="button" className="btn btn-icon btn-sm" onClick={() => moveList(list.id, 1)} disabled={activeBoard.lists.indexOf(list) === activeBoard.lists.length - 1} aria-label="Move list right">→</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => openModal({ type: 'prompt', title: 'List name', defaultValue: list.title, action: 'renameList', payload: { listId: list.id } })}>Rename</button>
+                    <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => openModal({ type: 'confirm', title: 'Delete this list?', action: 'deleteList', payload: { listId: list.id } })}>Delete</button>
                   </div>
                 </div>
 
-                <div style={{ marginTop: 12 }}>
-                  <button onClick={() => openModal({ type: 'prompt', title: 'Card title', defaultValue: '', action: 'createCard', payload: { listId: list.id } })} style={{ width: '100%', marginBottom: 8 }}>+ Add card</button>
-                  {list.cards.length === 0 ? <div style={{ color: '#666', padding: '8px 0' }}>No cards match</div> : null}
-                  <ListColumn list={list} onOpenCard={openCardDetails} onDeleteCard={(cardId) => openModal({ type: 'confirm', title: 'Delete this card?', action: 'deleteCard', payload: { cardId } })} />
-                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => openModal({ type: 'prompt', title: 'Card title', defaultValue: '', action: 'createCard', payload: { listId: list.id } })}
+                  style={{ width: '100%', marginBottom: 8 }}
+                >
+                  + Add card
+                </button>
+                {list.cards.length === 0 ? (
+                  <div className="empty-note">{hasActiveFilters ? 'No cards match' : 'No cards yet'}</div>
+                ) : null}
+                <ListColumn
+                  list={list}
+                  onOpenCard={openCardDetails}
+                  onDeleteCard={(cardId) => openModal({ type: 'confirm', title: 'Delete this card?', action: 'deleteCard', payload: { cardId } })}
+                  labelMap={boardLabelMap}
+                  users={users}
+                />
               </div>
             ))}
           </div>
@@ -460,77 +496,89 @@ export default function BoardView({ boardId }) {
       </div>
 
       {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, minWidth: 320, maxWidth: 420 }}>
-            <h3 style={{ marginTop: 0 }}>{modal.title}</h3>
+        <div className="overlay" style={{ zIndex: 30 }}>
+          <div className="dialog" role="dialog" aria-modal="true">
+            <h3>{modal.title}</h3>
             {modal.type === 'prompt' ? (
               <input
                 autoFocus
                 value={modalInput}
                 onChange={(e) => setModalInput(e.target.value)}
-                style={{ width: '100%', padding: 8, marginBottom: 12 }}
               />
             ) : (
-              <div style={{ marginBottom: 12, color: '#444' }}>This action cannot be undone.</div>
+              <p className="dialog-copy">This action cannot be undone.</p>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => { setModal(null); setModalInput('') }}>Cancel</button>
-              <button onClick={handleModalSubmit}>{modal.confirmText || 'OK'}</button>
+            <div className="dialog-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => { setModal(null); setModalInput('') }}>Cancel</button>
+              <button
+                type="button"
+                className={`btn ${modal.type === 'confirm' ? 'btn-danger' : 'btn-primary'}`}
+                onClick={handleModalSubmit}
+              >
+                {modal.confirmText || 'OK'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {selectedCard && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-          <div style={{ width: 'min(760px, 92vw)', maxHeight: '90vh', overflowY: 'auto', background: '#fff', padding: 20, borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ marginTop: 0 }}>{selectedCard.title}</h3>
-              <button onClick={() => setSelectedCard(null)}>Close</button>
+        <div className="overlay" style={{ zIndex: 10 }}>
+          <div className="card-modal" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
+            <div className="card-modal-header">
+              <h3 id="card-modal-title">{selectedCard.title}</h3>
+              <button type="button" className="btn btn-ghost" onClick={() => setSelectedCard(null)}>Close</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
-              <div>
-                <label>Title</label>
-                <input value={cardDraft.title} onChange={(e) => setCardDraft({ ...cardDraft, title: e.target.value })} style={{ width: '100%', padding: 8, marginBottom: 12 }} />
+            <div className="card-modal-body">
+              <div className="card-modal-main">
+                <div className="modal-section">
+                  <label htmlFor="card-title">Title</label>
+                  <input id="card-title" value={cardDraft.title} onChange={(e) => setCardDraft({ ...cardDraft, title: e.target.value })} />
+                </div>
 
-                <label>Description</label>
-                <textarea value={cardDraft.description} onChange={(e) => setCardDraft({ ...cardDraft, description: e.target.value })} style={{ width: '100%', minHeight: 110, padding: 8, marginBottom: 12 }} />
+                <div className="modal-section">
+                  <label htmlFor="card-description">Description</label>
+                  <textarea id="card-description" value={cardDraft.description} onChange={(e) => setCardDraft({ ...cardDraft, description: e.target.value })} style={{ minHeight: 110 }} />
+                </div>
 
-                <label>Due date</label>
-                <input type="date" value={cardDraft.due_date || ''} onChange={(e) => setCardDraft({ ...cardDraft, due_date: e.target.value })} style={{ width: '100%', padding: 8, marginBottom: 12 }} />
+                <div className="modal-section">
+                  <label htmlFor="card-due">Due date</label>
+                  <input id="card-due" type="date" value={cardDraft.due_date || ''} onChange={(e) => setCardDraft({ ...cardDraft, due_date: e.target.value })} />
+                </div>
 
-                <div style={{ marginBottom: 12 }}>
+                <div className="modal-section">
                   <label>Labels</label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                  <div className="card-labels" style={{ marginTop: 6 }}>
                     {(board.labels || []).map((label) => {
                       const checked = (cardDraft.labels || []).includes(label.id)
                       return (
                         <button
                           key={label.id}
                           type="button"
+                          className={`label-chip is-toggle${checked ? '' : ' is-inactive'}`}
                           onClick={() => {
                             const next = checked
                               ? (cardDraft.labels || []).filter((id) => id !== label.id)
                               : [...(cardDraft.labels || []), label.id]
                             setCardDraft({ ...cardDraft, labels: next })
                           }}
-                          style={{ background: checked ? '#dfeeff' : '#f5f5f5', border: '1px solid #ccc', padding: '6px 10px', borderRadius: 16 }}
+                          style={{ background: checked ? (label.color || '#2563eb') : undefined }}
                         >
                           {label.name}
                         </button>
                       )
                     })}
-                    <button type="button" onClick={() => openModal({ type: 'prompt', title: 'Label name', defaultValue: '', action: 'addLabel' })}>+ Add label</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => openModal({ type: 'prompt', title: 'Label name', defaultValue: '', action: 'addLabel' })}>+ Add label</button>
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <label>Assignee</label>
+                <div className="modal-section">
+                  <label htmlFor="card-assignee">Assignee</label>
                   <select
+                    id="card-assignee"
                     value={(cardDraft.assignees || [])[0] || ''}
                     onChange={(e) => setCardDraft({ ...cardDraft, assignees: e.target.value ? [Number(e.target.value)] : [] })}
-                    style={{ width: '100%', padding: 8 }}
                   >
                     <option value="">Unassigned</option>
                     {users.map((user) => (
@@ -539,54 +587,50 @@ export default function BoardView({ boardId }) {
                   </select>
                 </div>
 
-                <div style={{ marginBottom: 12 }}>
-                  <button onClick={saveCardDetails}>Save card</button>
+                <div className="modal-section">
+                  <button type="button" className="btn btn-primary" onClick={saveCardDetails}>Save card</button>
                 </div>
 
-                <div style={{ marginTop: 18 }}>
+                <div className="modal-section">
                   <h4>Comments</h4>
-                  <div style={{ marginBottom: 8 }}>
-                    {selectedCard.comments && selectedCard.comments.length > 0 ? selectedCard.comments.map((comment) => (
-                      <div key={comment.id} style={{ background: '#f7f7f7', padding: 8, marginBottom: 6, borderRadius: 6 }}>
-                        <strong>{comment.author}</strong>: {comment.text}
-                      </div>
-                    )) : <div>No comments yet.</div>}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment" style={{ flex: 1, padding: 8 }} />
-                    <button onClick={addComment}>Add</button>
+                  {selectedCard.comments && selectedCard.comments.length > 0 ? selectedCard.comments.map((comment) => (
+                    <div key={comment.id} className="comment-item">
+                      <strong>{comment.author}</strong>: {comment.text}
+                    </div>
+                  )) : <p className="muted">No comments yet.</p>}
+                  <div className="inline-form" style={{ marginTop: 8 }}>
+                    <input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment" />
+                    <button type="button" className="btn btn-secondary" onClick={addComment}>Add</button>
                   </div>
                 </div>
 
-                <div style={{ marginTop: 18 }}>
+                <div className="modal-section">
                   <h4>Checklist</h4>
-                  <div style={{ marginBottom: 8 }}>
-                    {(selectedCard.checklist || []).map((item) => (
-                      <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <input type="checkbox" checked={!!item.done} onChange={(e) => toggleChecklistItem(item.id, e.target.checked)} />
-                        <span style={{ textDecoration: item.done ? 'line-through' : 'none' }}>{item.text}</span>
-                      </label>
-                    ))}
-                    {!selectedCard.checklist || selectedCard.checklist.length === 0 ? <div>No checklist items yet.</div> : null}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)} placeholder="Add checklist item" style={{ flex: 1, padding: 8 }} />
-                    <button onClick={addChecklistItem}>Add</button>
+                  {(selectedCard.checklist || []).map((item) => (
+                    <label key={item.id} className="checklist-item" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" checked={!!item.done} onChange={(e) => toggleChecklistItem(item.id, e.target.checked)} style={{ width: 'auto' }} />
+                      <span style={{ textDecoration: item.done ? 'line-through' : 'none' }}>{item.text}</span>
+                    </label>
+                  ))}
+                  {!selectedCard.checklist || selectedCard.checklist.length === 0 ? <p className="muted">No checklist items yet.</p> : null}
+                  <div className="inline-form" style={{ marginTop: 8 }}>
+                    <input value={newChecklistText} onChange={(e) => setNewChecklistText(e.target.value)} placeholder="Add checklist item" />
+                    <button type="button" className="btn btn-secondary" onClick={addChecklistItem}>Add</button>
                   </div>
                 </div>
               </div>
 
-              <aside>
+              <aside className="card-modal-aside">
                 <h4>Activity</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(selectedCard.activity || []).length === 0 ? <div>No activity yet.</div> : selectedCard.activity.map((item) => (
-                    <div key={item.id} style={{ background: '#f7f7f7', padding: 8, borderRadius: 6 }}>
-                      <div style={{ fontWeight: 600 }}>{item.type}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>{new Date(item.created_at).toLocaleString()}</div>
-                      {item.payload && item.payload.text && <div>{item.payload.text}</div>}
-                    </div>
-                  ))}
-                </div>
+                {(selectedCard.activity || []).length === 0 ? (
+                  <p className="muted">No activity yet.</p>
+                ) : selectedCard.activity.map((item) => (
+                  <div key={item.id} className="activity-item">
+                    <div style={{ fontWeight: 600 }}>{item.type}</div>
+                    <div className="muted" style={{ fontSize: 12 }}>{new Date(item.created_at).toLocaleString()}</div>
+                    {item.payload && item.payload.text && <div>{item.payload.text}</div>}
+                  </div>
+                ))}
               </aside>
             </div>
           </div>
