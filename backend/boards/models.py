@@ -36,6 +36,9 @@ class Card(models.Model):
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['position']
+
     def __str__(self):
         return self.title
 
