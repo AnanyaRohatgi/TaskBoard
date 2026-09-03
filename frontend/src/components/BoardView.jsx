@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../api'
 import { DragDropContext } from 'react-beautiful-dnd'
 import ListColumn from './ListColumn'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 export default function BoardView({ boardId }){
   const [board, setBoard] = useState(null)
@@ -11,7 +9,7 @@ export default function BoardView({ boardId }){
 
   useEffect(()=>{
     if(!boardId) return
-    axios.get(`${API_BASE}/boards/${boardId}/`).then(r=>{
+    api.get(`/boards/${boardId}/`).then(r=>{
       setBoard(r.data)
       setLoading(false)
     }).catch(e=>{
@@ -29,9 +27,9 @@ export default function BoardView({ boardId }){
       const newListId = parseInt(destination.droppableId)
       const newPosition = destination.index
       try{
-        await axios.patch(`${API_BASE}/cards/${draggableId}/`, { list: newListId, position: newPosition })
+        await api.patch(`/cards/${draggableId}/`, { list: newListId, position: newPosition })
         // refresh board
-        const r = await axios.get(`${API_BASE}/boards/${boardId}/`)
+        const r = await api.get(`/boards/${boardId}/`)
         setBoard(r.data)
       }catch(err){
         console.error('Failed to move card', err)
@@ -41,8 +39,8 @@ export default function BoardView({ boardId }){
       const listId = parseInt(source.droppableId)
       const newPosition = destination.index
       try{
-        await axios.patch(`${API_BASE}/cards/${draggableId}/`, { position: newPosition })
-        const r = await axios.get(`${API_BASE}/boards/${boardId}/`)
+        await api.patch(`/cards/${draggableId}/`, { position: newPosition })
+        const r = await api.get(`/boards/${boardId}/`)
         setBoard(r.data)
       }catch(err){
         console.error('Failed to reorder card', err)

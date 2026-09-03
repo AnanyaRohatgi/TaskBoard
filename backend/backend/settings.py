@@ -94,12 +94,14 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
 }
 
 # CORS for frontend development
+# Use FRONTEND_ORIGIN to explicitly set the browser origin that is allowed (e.g. http://localhost:3000)
 CORS_ALLOWED_ORIGINS = [
-    os.environ.get('VITE_API_BASE_URL', 'http://localhost:3000')
+    os.environ.get('FRONTEND_ORIGIN', 'http://localhost:3000')
 ]
