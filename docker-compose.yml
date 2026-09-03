@@ -1,42 +1,63 @@
-version: '3.8'
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-trello}
       POSTGRES_USER: ${POSTGRES_USER:-trello}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trello}
-    volumes:
-      - db_data:/var/lib/postgresql/data
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trello} -d ${POSTGRES_DB:-trello}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build: ./backend
-    command: sh /app/entrypoint.sh
-    volumes:
-      - ./backend:/app
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      USE_SQLITE: "0"
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: ${POSTGRES_DB:-trello}
+      DATABASE_USER: ${POSTGRES_USER:-trello}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-docker-dev-secret}
+      DJANGO_DEBUG: "1"
+      FRONTEND_ORIGIN: http://localhost:3000
+      PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-      - DATABASE_NAME=${POSTGRES_DB:-trello}
-      - DATABASE_USER=${POSTGRES_USER:-trello}
-      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-trello}
-      - DJANGO_DEBUG=1
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: sh /app/entrypoint.sh
 
   frontend:
-    build: ./frontend
-    volumes:
-      - ./frontend:/app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000/api
+    env_file:
+      - .env
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api
     ports:
       - "3000:3000"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000/api
+    depends_on:
+      - backend
 
 volumes:
-  db_data:
+  postgres_data:
