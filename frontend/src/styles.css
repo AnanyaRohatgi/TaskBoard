@@ -1,24 +1,31 @@
 :root {
-  --bg: #eef1f6;
-  --surface: #ffffff;
-  --surface-muted: #f7f8fb;
-  --text: #1c2430;
-  --text-muted: #5b6778;
-  --border: #dbe2ea;
-  --border-strong: #c5d0dc;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-soft: #dbeafe;
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
-  --danger-soft: #fee2e2;
-  --success: #047857;
-  --warning: #b45309;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.04);
-  --shadow-hover: 0 4px 12px rgba(16, 24, 40, 0.1);
+  --bg: #081426; /* Dark Navy / Midnight Blue */
+  --surface: #0b1e2e; /* card & panel surface */
+  --surface-muted: #071422; /* slightly darker panel */
+  --text: #FFFFFF;
+  --text-muted: #9fb0bd;
+  --border: #143042;
+  --border-strong: #1b475a;
+  --primary: #CDE248; /* Lime / Chartreuse accent */
+  --primary-hover: #B7D028;
+  --primary-soft: rgba(205,226,72,0.12);
+
+  --danger: #ff6b6b;
+  --danger-hover: #ff4c4c;
+  --danger-soft: rgba(255,107,107,0.08);
+
+  --success: #33cc99;
+  --warning: #e6a600;
+
+  --shadow: 0 1px 2px rgba(2,6,10,0.6), 0 8px 24px rgba(2,6,10,0.6);
+
+  --shadow-hover: 0 6px 18px rgba(2,6,10,0.8);
+
   --radius: 12px;
   --radius-sm: 8px;
-  --focus: 0 0 0 3px rgba(37, 99, 235, 0.28);
+
+  --focus: 0 0 0 4px rgba(205,226,72,0.18);
+
   --font: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
 }
 
@@ -179,7 +186,7 @@ h1, h2, h3, h4, p {
 }
 
 .btn:hover:not(:disabled) {
-  background: #e8edf4;
+  background: #162640;
 }
 
 .btn-primary {
@@ -474,8 +481,8 @@ h1, h2, h3, h4, p {
 .board-list {
   flex: 0 0 292px;
   width: 292px;
-  background: #e8edf3;
-  border: 1px solid #d5dde6;
+  background: #162640;
+  border: 1px solid #24344A;
   border-radius: 14px;
   padding: 10px;
   min-height: 180px;
