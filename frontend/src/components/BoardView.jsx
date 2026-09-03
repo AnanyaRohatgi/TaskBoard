@@ -20,6 +20,7 @@ export default function BoardView({ boardId }) {
   const [newChecklistText, setNewChecklistText] = useState('')
   const [modal, setModal] = useState(null)
   const [modalInput, setModalInput] = useState('')
+  const [filters, setFilters] = useState({ search: '', label: 'all', dueDate: '', assignee: 'all' })
 
   const boardLabelMap = useMemo(() => {
     const mapping = {}
@@ -28,6 +29,24 @@ export default function BoardView({ boardId }) {
     })
     return mapping
   }, [board])
+
+  const filteredBoard = useMemo(() => {
+    if (!board) return null
+
+    return {
+      ...board,
+      lists: (board.lists || []).map((list) => ({
+        ...list,
+        cards: (list.cards || []).filter((card) => {
+          const searchMatch = !filters.search || card.title.toLowerCase().includes(filters.search.toLowerCase())
+          const labelMatch = filters.label === 'all' || (card.labels || []).includes(Number(filters.label))
+          const dueDateMatch = !filters.dueDate || (card.due_date || '').slice(0, 10) === filters.dueDate
+          const assigneeMatch = filters.assignee === 'all' || (card.assignees || []).some((assigneeId) => String(assigneeId) === String(filters.assignee))
+          return searchMatch && labelMatch && dueDateMatch && assigneeMatch
+        })
+      }))
+    }
+  }, [board, filters])
 
   const loadBoard = async () => {
     const r = await api.get(`/boards/${boardId}/`)
@@ -344,6 +363,8 @@ export default function BoardView({ boardId }) {
   if (loading) return <div>Loading board...</div>
   if (!board) return <div>No board selected</div>
 
+  const activeBoard = filteredBoard || board
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -352,6 +373,34 @@ export default function BoardView({ boardId }) {
           <button onClick={() => openModal({ type: 'prompt', title: 'Board title', defaultValue: board.title, action: 'renameBoard', payload: { boardId: board.id } })}>Rename Board</button>
           <button onClick={() => openModal({ type: 'prompt', title: 'Board description', defaultValue: board.description || '', action: 'editDescription', payload: { boardId: board.id } })} style={{ marginLeft: 8 }}>Edit Description</button>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <input
+          value={filters.search}
+          onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
+          placeholder="Search cards"
+          style={{ minWidth: 150, flex: 1 }}
+        />
+        <select value={filters.label} onChange={(e) => setFilters((current) => ({ ...current, label: e.target.value }))} style={{ minWidth: 150 }}>
+          <option value="all">All labels</option>
+          {(board.labels || []).map((label) => (
+            <option key={label.id} value={label.id}>{label.name}</option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={filters.dueDate}
+          onChange={(e) => setFilters((current) => ({ ...current, dueDate: e.target.value }))}
+          style={{ minWidth: 150 }}
+        />
+        <select value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))} style={{ minWidth: 150 }}>
+          <option value="all">All assignees</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>{user.username}</option>
+          ))}
+        </select>
+        <button onClick={() => setFilters({ search: '', label: 'all', dueDate: '', assignee: 'all' })}>Clear filters</button>
       </div>
 
       <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
@@ -366,13 +415,13 @@ export default function BoardView({ boardId }) {
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', alignItems: 'flex-start' }}>
-          {board.lists.map((list) => (
+          {activeBoard.lists.map((list) => (
             <div key={list.id} style={{ minWidth: 280, background: '#f4f4f4', borderRadius: 8, padding: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>{list.title}</strong>
                 <div>
-                  <button onClick={() => moveList(list.id, -1)} disabled={board.lists.indexOf(list) === 0}>←</button>
-                  <button onClick={() => moveList(list.id, 1)} disabled={board.lists.indexOf(list) === board.lists.length - 1}>→</button>
+                  <button onClick={() => moveList(list.id, -1)} disabled={activeBoard.lists.indexOf(list) === 0}>←</button>
+                  <button onClick={() => moveList(list.id, 1)} disabled={activeBoard.lists.indexOf(list) === activeBoard.lists.length - 1}>→</button>
                   <button onClick={() => openModal({ type: 'prompt', title: 'List name', defaultValue: list.title, action: 'renameList', payload: { listId: list.id } })}>Rename</button>
                   <button onClick={() => openModal({ type: 'confirm', title: 'Delete this list?', action: 'deleteList', payload: { listId: list.id } })}>Delete</button>
                 </div>
@@ -380,12 +429,14 @@ export default function BoardView({ boardId }) {
 
               <div style={{ marginTop: 12 }}>
                 <button onClick={() => openModal({ type: 'prompt', title: 'Card title', defaultValue: '', action: 'createCard', payload: { listId: list.id } })} style={{ width: '100%', marginBottom: 8 }}>+ Add card</button>
+                {list.cards.length === 0 ? <div style={{ color: '#666', padding: '8px 0' }}>No cards match</div> : null}
                 <ListColumn list={list} onOpenCard={openCardDetails} onDeleteCard={(cardId) => openModal({ type: 'confirm', title: 'Delete this card?', action: 'deleteCard', payload: { cardId } })} />
               </div>
             </div>
           ))}
         </div>
       </DragDropContext>
+    </div>
 
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
