@@ -125,9 +125,23 @@ export default function App(){
 
   return (
     <div style={{ padding: 20 }}>
+      <style>{`
+        .task-board-shell { display: flex; gap: 20px; align-items: flex-start; }
+        .task-board-sidebar { width: 260px; flex-shrink: 0; }
+        .task-board-main { flex: 1; min-width: 0; }
+        @media (max-width: 900px) {
+          .task-board-shell { flex-direction: column; }
+          .task-board-sidebar { width: 100%; }
+        }
+        @media (max-width: 600px) {
+          .task-board-sidebar .board-row { flex-wrap: wrap; }
+          .task-board-sidebar .board-row button { flex: 1 1 auto; }
+        }
+      `}</style>
+
       <h1>Task Board</h1>
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <aside style={{ width: 260 }}>
+      <div className="task-board-shell">
+        <aside className="task-board-sidebar">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: '0 0 8px' }}>Boards</h3>
             <button onClick={handleLogout}>Logout</button>
@@ -152,7 +166,7 @@ export default function App(){
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {boards.map((board) => (
               <li key={board.id} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="board-row" style={{ display: 'flex', gap: 6 }}>
                   <button
                     onClick={() => setSelected(board.id)}
                     style={{ flex: 1, textAlign: 'left', background: selected === board.id ? '#dfeeff' : '#f5f5f5', border: '1px solid #ddd', padding: 8 }}
@@ -169,7 +183,7 @@ export default function App(){
           </ul>
         </aside>
 
-        <main style={{ flex: 1 }}>
+        <main className="task-board-main">
           {selected ? <BoardView boardId={selected} /> : <div>Select a board to view</div>}
         </main>
       </div>

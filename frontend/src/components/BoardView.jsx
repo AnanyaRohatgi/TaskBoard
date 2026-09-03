@@ -367,76 +367,97 @@ export default function BoardView({ boardId }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>{board.title}</h2>
-        <div>
-          <button onClick={() => openModal({ type: 'prompt', title: 'Board title', defaultValue: board.title, action: 'renameBoard', payload: { boardId: board.id } })}>Rename Board</button>
-          <button onClick={() => openModal({ type: 'prompt', title: 'Board description', defaultValue: board.description || '', action: 'editDescription', payload: { boardId: board.id } })} style={{ marginLeft: 8 }}>Edit Description</button>
+      <style>{`
+        .board-shell { display: flex; flex-direction: column; gap: 16px; }
+        .board-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+        .board-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .board-filters input, .board-filters select { padding: 8px; min-width: 150px; }
+        .board-columns { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; }
+        .board-list { min-width: 280px; background: #f4f4f4; border-radius: 8px; padding: 12px; }
+        .board-list-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .board-list-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+        @media (max-width: 900px) {
+          .board-toolbar { align-items: flex-start; }
+          .board-filters { width: 100%; }
+          .board-filters input, .board-filters select { flex: 1 1 160px; }
+        }
+        @media (max-width: 600px) {
+          .board-list { min-width: 240px; }
+          .board-list-header { flex-direction: column; align-items: flex-start; }
+          .board-list-actions { width: 100%; }
+          .board-list-actions button { flex: 1 1 auto; }
+        }
+      `}</style>
+
+      <div className="board-shell">
+        <div className="board-toolbar">
+          <h2 style={{ margin: 0 }}>{board.title}</h2>
+          <div>
+            <button onClick={() => openModal({ type: 'prompt', title: 'Board title', defaultValue: board.title, action: 'renameBoard', payload: { boardId: board.id } })}>Rename Board</button>
+            <button onClick={() => openModal({ type: 'prompt', title: 'Board description', defaultValue: board.description || '', action: 'editDescription', payload: { boardId: board.id } })} style={{ marginLeft: 8 }}>Edit Description</button>
+          </div>
         </div>
-      </div>
 
-      <div style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <input
-          value={filters.search}
-          onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
-          placeholder="Search cards"
-          style={{ minWidth: 150, flex: 1 }}
-        />
-        <select value={filters.label} onChange={(e) => setFilters((current) => ({ ...current, label: e.target.value }))} style={{ minWidth: 150 }}>
-          <option value="all">All labels</option>
-          {(board.labels || []).map((label) => (
-            <option key={label.id} value={label.id}>{label.name}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={filters.dueDate}
-          onChange={(e) => setFilters((current) => ({ ...current, dueDate: e.target.value }))}
-          style={{ minWidth: 150 }}
-        />
-        <select value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))} style={{ minWidth: 150 }}>
-          <option value="all">All assignees</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>{user.username}</option>
-          ))}
-        </select>
-        <button onClick={() => setFilters({ search: '', label: 'all', dueDate: '', assignee: 'all' })}>Clear filters</button>
-      </div>
+        <div className="board-filters">
+          <input
+            value={filters.search}
+            onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
+            placeholder="Search cards"
+          />
+          <select value={filters.label} onChange={(e) => setFilters((current) => ({ ...current, label: e.target.value }))}>
+            <option value="all">All labels</option>
+            {(board.labels || []).map((label) => (
+              <option key={label.id} value={label.id}>{label.name}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={filters.dueDate}
+            onChange={(e) => setFilters((current) => ({ ...current, dueDate: e.target.value }))}
+          />
+          <select value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))}>
+            <option value="all">All assignees</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>{user.username}</option>
+            ))}
+          </select>
+          <button onClick={() => setFilters({ search: '', label: 'all', dueDate: '', assignee: 'all' })}>Clear filters</button>
+        </div>
 
-      <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
-        <input
-          value={newListTitle}
-          onChange={(e) => setNewListTitle(e.target.value)}
-          placeholder="New list title"
-          style={{ flex: 1, padding: 8 }}
-        />
-        <button onClick={createList}>Add list</button>
-      </div>
+        <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+          <input
+            value={newListTitle}
+            onChange={(e) => setNewListTitle(e.target.value)}
+            placeholder="New list title"
+            style={{ flex: 1, padding: 8 }}
+          />
+          <button onClick={createList}>Add list</button>
+        </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', alignItems: 'flex-start' }}>
-          {activeBoard.lists.map((list) => (
-            <div key={list.id} style={{ minWidth: 280, background: '#f4f4f4', borderRadius: 8, padding: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>{list.title}</strong>
-                <div>
-                  <button onClick={() => moveList(list.id, -1)} disabled={activeBoard.lists.indexOf(list) === 0}>←</button>
-                  <button onClick={() => moveList(list.id, 1)} disabled={activeBoard.lists.indexOf(list) === activeBoard.lists.length - 1}>→</button>
-                  <button onClick={() => openModal({ type: 'prompt', title: 'List name', defaultValue: list.title, action: 'renameList', payload: { listId: list.id } })}>Rename</button>
-                  <button onClick={() => openModal({ type: 'confirm', title: 'Delete this list?', action: 'deleteList', payload: { listId: list.id } })}>Delete</button>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="board-columns">
+            {activeBoard.lists.map((list) => (
+              <div key={list.id} className="board-list">
+                <div className="board-list-header">
+                  <strong>{list.title}</strong>
+                  <div className="board-list-actions">
+                    <button onClick={() => moveList(list.id, -1)} disabled={activeBoard.lists.indexOf(list) === 0}>←</button>
+                    <button onClick={() => moveList(list.id, 1)} disabled={activeBoard.lists.indexOf(list) === activeBoard.lists.length - 1}>→</button>
+                    <button onClick={() => openModal({ type: 'prompt', title: 'List name', defaultValue: list.title, action: 'renameList', payload: { listId: list.id } })}>Rename</button>
+                    <button onClick={() => openModal({ type: 'confirm', title: 'Delete this list?', action: 'deleteList', payload: { listId: list.id } })}>Delete</button>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <button onClick={() => openModal({ type: 'prompt', title: 'Card title', defaultValue: '', action: 'createCard', payload: { listId: list.id } })} style={{ width: '100%', marginBottom: 8 }}>+ Add card</button>
+                  {list.cards.length === 0 ? <div style={{ color: '#666', padding: '8px 0' }}>No cards match</div> : null}
+                  <ListColumn list={list} onOpenCard={openCardDetails} onDeleteCard={(cardId) => openModal({ type: 'confirm', title: 'Delete this card?', action: 'deleteCard', payload: { cardId } })} />
                 </div>
               </div>
-
-              <div style={{ marginTop: 12 }}>
-                <button onClick={() => openModal({ type: 'prompt', title: 'Card title', defaultValue: '', action: 'createCard', payload: { listId: list.id } })} style={{ width: '100%', marginBottom: 8 }}>+ Add card</button>
-                {list.cards.length === 0 ? <div style={{ color: '#666', padding: '8px 0' }}>No cards match</div> : null}
-                <ListColumn list={list} onOpenCard={openCardDetails} onDeleteCard={(cardId) => openModal({ type: 'confirm', title: 'Delete this card?', action: 'deleteCard', payload: { cardId } })} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </DragDropContext>
-    </div>
+            ))}
+          </div>
+        </DragDropContext>
+      </div>
 
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
